@@ -18,6 +18,9 @@
 <!-- Ambient layer. The blurred artwork is what the glass actually refracts;
      without something behind it, frosted panels read as flat grey boxes. -->
 <div class="ambient" aria-hidden="true">
+  <video class="ambient__clip" id="ambientClip" muted loop playsinline
+         preload="auto" disablepictureinpicture></video>
+  <img class="ambient__clip" id="ambientStill" alt="">
   <div class="ambient__art" id="ambientArt"></div>
   <div class="ambient__glow ambient__glow--a"></div>
   <div class="ambient__glow ambient__glow--b"></div>
@@ -64,6 +67,21 @@
         </div>
         <div class="clock__date" id="clockDate">&nbsp;</div>
       </div>
+      <div class="wx" id="wx" hidden>
+        <div class="wx__now">
+          <i class="ph ph-cloud wx__icon" id="wxIcon" aria-hidden="true"></i>
+          <div class="wx__reading">
+            <span class="wx__temp num" id="wxTemp">--</span>
+            <span class="wx__deg">&deg;</span>
+          </div>
+          <div class="wx__meta">
+            <span class="wx__text" id="wxText">&nbsp;</span>
+            <span class="wx__sub num" id="wxSub">&nbsp;</span>
+          </div>
+        </div>
+        <div class="wx__hours" id="wxHours"></div>
+      </div>
+
       <div class="clock__foot">
         <span class="meta"><span class="meta__k">Up</span><span class="meta__v num" id="uptime">--</span></span>
         <span class="meta"><span class="meta__k">Tasks</span><span class="meta__v num" id="procs">--</span></span>
@@ -75,13 +93,20 @@
 
       <div class="media__main">
         <div class="media__art" id="artFrame">
-          <img id="artImg" alt="" hidden>
-          <div class="media__art-empty" aria-hidden="true"><i class="ph ph-music-notes"></i></div>
+          <div class="media__bloom" id="artBloom" aria-hidden="true"></div>
+          <div class="media__plate">
+            <img id="artImg" alt="" hidden>
+            <div class="media__art-empty" aria-hidden="true"><i class="ph ph-music-notes"></i></div>
+          </div>
+          <svg class="media__ring" viewBox="0 0 100 100" aria-hidden="true">
+            <rect class="media__ring-track" x="1.6" y="1.6" width="96.8" height="96.8" rx="13"></rect>
+            <rect class="media__ring-value" id="artRing" x="1.6" y="1.6" width="96.8" height="96.8" rx="13"></rect>
+          </svg>
         </div>
 
         <div class="media__body">
           <div class="media__source" id="mediaSource"></div>
-          <h1 class="media__title" id="mediaTitle">Nothing playing</h1>
+          <h1 class="media__title"><span class="media__title-text" id="mediaTitle">Nothing playing</span></h1>
           <p class="media__artist" id="mediaArtist">Start something on this PC and it shows up here.</p>
 
           <div class="media__scrub" id="scrub">
@@ -91,6 +116,10 @@
             <span class="num media__t" id="durText">0:00</span>
           </div>
         </div>
+      </div>
+
+      <div class="media__spectrum" id="spectrumWrap" hidden>
+        <canvas id="spectrum"></canvas>
       </div>
 
       <div class="media__foot">

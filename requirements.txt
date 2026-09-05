@@ -10,3 +10,5 @@ winrt-Windows.Media.Control>=3.0
 winrt-Windows.Storage.Streams>=3.0
 winrt-Windows.Foundation>=3.0
 winrt-Windows.Foundation.Collections>=3.0
+numpy>=1.26
+pyaudiowpatch>=0.2.12

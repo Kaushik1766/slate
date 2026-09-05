@@ -1,11 +1,13 @@
 # Slate
 
-A local dashboard for your PC, built to live on a spare tablet. It shows the
-time, whatever is playing (with working transport and volume controls), CPU and
-GPU load and temperature, memory, storage, network throughput and battery.
+A local dashboard for your PC, built to live on a spare tablet. A big clock
+with the local forecast, a player for whatever is currently playing with a
+spectrum analyser that follows the actual audio coming out of the machine, and
+a strip of instruments for CPU, GPU and memory.
 
-Everything runs on your machine. Nothing is sent anywhere, there is no account,
-and the tablet only needs to be on the same network.
+Everything runs on your machine. The only outbound request is to a weather
+API. There is no account, and the tablet only needs to be on the same
+network.
 
 ![Slate on a tablet in landscape](docs/landscape.png)
 
@@ -128,15 +130,49 @@ The accent colour is sampled from the current album art, and the background is
 that artwork blurred behind the glass, so the whole dashboard shifts with what
 you are listening to. When nothing is playing it settles back to mint.
 
+## The spectrum
+
+The bars under the player follow the machine's actual audio output, tapped
+from the WASAPI loopback of the default device. It works for anything audible,
+not only apps with a media session, and it follows you if you change output
+device mid-song.
+
+Only band magnitudes ever leave the analyser. Audio is measured in a rolling
+in-memory window and discarded; nothing is recorded and nothing is written to
+disk. If no loopback device is available the bars simply never appear, and the
+startup banner says why.
+
+Frames are only sent while there is sound and a browser attached, so a silent
+machine costs nothing.
+
+## The backdrop
+
+Panels are frosted glass, which needs something behind it or it reads as flat
+grey. By default that something is the current album art, blurred.
+
+With nothing playing, it falls back to whatever you drop into `web/ambient`:
+an `.mp4`, `.webm` or `.gif` becomes a looping backdrop the glass refracts
+over. Several files rotate every six minutes. See `web/ambient/README.txt` for
+the details and the two CSS knobs that control how strongly it reads.
+
+## The weather
+
+Open-Meteo, which needs no API key and no account. It is set to Noida; change
+`SLATE_LAT`, `SLATE_LON` and `SLATE_PLACE` to move it. The forecast refreshes
+every ten minutes, and the hourly strip uses the timezone the API reports for
+those coordinates, so it lines up with the clock beside it.
+
 ## What it reads, and how
 
 | Reading | Source |
 | --- | --- |
-| CPU load, per-core load, memory, disks, network, battery | `psutil` |
-| CPU temperature, clocks, package power, fan speed | LibreHardwareMonitor (admin) |
+| CPU load, per-core load, memory | `psutil` |
+| CPU temperature and package power | LibreHardwareMonitor (admin) |
 | GPU load, temperature, hot spot, VRAM, power, clock | LibreHardwareMonitor, falling back to `nvidia-smi` |
 | Now playing, transport, seek | Windows `GlobalSystemMediaTransportControls` |
 | Volume and mute | Windows Core Audio |
+| Audio spectrum | WASAPI loopback of the default output |
+| Weather | [Open-Meteo](https://open-meteo.com), no key required |
 
 Because the media bridge is the same one behind the Windows volume overlay, it
 works with Spotify, browser tabs, VLC, foobar2000 and anything else that
@@ -151,6 +187,9 @@ Environment variables, all optional:
 | `SLATE_PORT` | `8750` | Port to serve on |
 | `SLATE_HOST` | `0.0.0.0` | Interface to bind; use `127.0.0.1` to keep it local-only |
 | `SLATE_INTERVAL` | `1.0` | Seconds between samples |
+| `SLATE_LAT` | `28.5355` | Latitude for the forecast |
+| `SLATE_LON` | `77.3910` | Longitude for the forecast |
+| `SLATE_PLACE` | `Noida` | Name shown beside the forecast |
 | `SLATE_LOG_LEVEL` | `INFO` | Set to `WARNING` to quieten the log |
 | `SLATE_LOG_ASSETS` | unset | Set to `1` to log CSS, JS and font requests too |
 
@@ -165,9 +204,12 @@ slate/
     main.py        FastAPI app, websocket push loop, media endpoints
     hardware.py    sensor sampling, layered across LHM / nvidia-smi / psutil
     media.py       Windows media session bridge and system volume
+    audio.py       WASAPI loopback capture and FFT banding
+    weather.py     Open-Meteo forecast, cached
     access.py      connection logging
   web/
     index.html     the dashboard
+    ambient/       drop a looping clip here, see the README inside
     css/style.css  glass, layout, both themes
     js/app.js      websocket client, dials, chart, controls
     vendor/        Geist, Geist Mono, Phosphor icons (self-hosted)

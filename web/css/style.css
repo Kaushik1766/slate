@@ -36,6 +36,8 @@
   --track: rgba(255, 255, 255, 0.13);
 
   --art-opacity: 0.44;
+  --clip-opacity: 0.6;
+  --clip-blur: 7px;
   --glow-opacity: 0.5;
   --grain-opacity: 0.035;
   --scrim: rgba(6, 8, 11, 0.46);
@@ -70,6 +72,8 @@
     --track: rgba(12, 16, 21, 0.17);
 
     --art-opacity: 0.6;
+    --clip-opacity: 0.5;
+    --clip-blur: 7px;
     --glow-opacity: 0.42;
     --grain-opacity: 0.022;
     --scrim: rgba(226, 232, 240, 0.34);
@@ -96,6 +100,8 @@
   --track: rgba(12, 16, 21, 0.17);
 
   --art-opacity: 0.6;
+  --clip-opacity: 0.5;
+  --clip-blur: 7px;
   --glow-opacity: 0.42;
   --grain-opacity: 0.022;
   --scrim: rgba(226, 232, 240, 0.34);
@@ -146,6 +152,28 @@ body {
   overflow: hidden;
   background: var(--bg);
 }
+
+/* Whatever is in web/ambient plays here, under the scrim and behind every
+   panel. Blurred just enough that it cannot compete with the numbers, and
+   paused whenever the artwork takes over or nobody is looking. */
+.ambient__clip {
+  position: absolute;
+  inset: -6%;
+  width: 112%;
+  height: 112%;
+  object-fit: cover;
+  filter: blur(var(--clip-blur)) saturate(125%);
+  -webkit-filter: blur(var(--clip-blur)) saturate(125%);
+  opacity: 0;
+  transition: opacity 1100ms var(--ease);
+  pointer-events: none;
+}
+
+.ambient__clip[data-shown="true"] { opacity: var(--clip-opacity); }
+
+#ambientStill { display: none; }
+#ambientStill[data-active="true"] { display: block; }
+#ambientClip[data-active="false"] { display: none; }
 
 .ambient__art {
   position: absolute;
@@ -476,6 +504,82 @@ body {
   letter-spacing: -0.005em;
 }
 
+/* Weather fills the space the clock leaves behind, which is the whole reason
+   a wall dashboard has a big empty middle in the first place. */
+.wx {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 16px;
+  margin-top: 4px;
+  border-top: 1px solid var(--stroke-soft);
+}
+
+.wx__now { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+.wx__icon {
+  font-size: 38px;
+  color: rgba(var(--accent-rgb), 0.95);
+  flex: 0 0 auto;
+}
+
+.wx__reading { display: flex; align-items: flex-start; }
+
+.wx__temp {
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.wx__deg { font-size: 19px; color: var(--text-faint); line-height: 1.1; }
+
+.wx__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding-left: 4px;
+}
+
+.wx__text {
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wx__sub { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
+
+.wx__hours { display: flex; gap: 10px; }
+
+.wx__hour {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.wx__hour i { font-size: 15px; color: var(--text-dim); }
+
+.wx__hour-at {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.wx__hour-temp {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
 .clock__foot {
   display: flex;
   gap: 22px;
@@ -499,16 +603,27 @@ body {
   align-items: center;
 }
 
+/* The cover, a progress ring drawn around its own silhouette, and a bloom
+   behind it whose strength follows the music. */
 .media__art {
   position: relative;
   flex: 0 0 auto;
   width: 228px;
   height: 228px;
-  border-radius: 22px;
+  padding: 7px;
+}
+
+.media__plate {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--stroke);
   background: rgba(var(--accent-rgb), 0.1);
-  box-shadow: 0 14px 34px -16px var(--shade);
+  box-shadow: 0 16px 38px -18px var(--shade);
+  transform: scale(1);
+  will-change: transform;
 }
 
 .media__art img {
@@ -528,11 +643,84 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: 34px;
   color: rgba(var(--accent-rgb), 0.55);
+  transition: opacity 300ms var(--ease);
 }
 
 .media__art img[data-shown="true"] + .media__art-empty { opacity: 0; }
+
+.media__bloom {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle at center,
+    rgba(var(--accent-rgb), 0.55), rgba(var(--accent-rgb), 0) 68%);
+  opacity: 0;
+  transform: scale(0.82);
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.media__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.media__ring rect {
+  fill: none;
+  stroke-width: 2.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.media__ring-track { stroke: var(--track); }
+
+.media__ring-value {
+  stroke: rgba(var(--accent-rgb), 1);
+  stroke-linecap: round;
+  stroke-dasharray: 363.4;
+  stroke-dashoffset: 363.4;
+  transition: stroke-dashoffset 420ms linear;
+}
+
+/* Long titles scroll rather than truncating: on a wall dashboard you want the
+   whole name eventually, not an ellipsis forever. */
+.media__title-text { display: inline-block; white-space: nowrap; }
+
+.media__title--scroll { overflow: hidden; }
+.media__title--scroll .media__title-text { animation: titleScroll 14s linear infinite; }
+
+@keyframes titleScroll {
+  0%, 12%    { transform: translate3d(0, 0, 0); }
+  48%, 60%   { transform: translate3d(var(--scroll-by, 0px), 0, 0); }
+  96%, 100%  { transform: translate3d(0, 0, 0); }
+}
+
+.media__spectrum {
+  flex: 0 0 auto;
+  height: 86px;
+  position: relative;
+  margin: 0 -2px;
+}
+
+.media__spectrum canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* A visualiser is the one thing on this page that exists purely to move, so
+   it is the first thing to go when motion is unwelcome. */
+@media (prefers-reduced-motion: reduce) {
+  .media__spectrum { display: none; }
+  .media__title--scroll .media__title-text { animation: none; }
+}
 
 .media__body { min-width: 0; flex: 1 1 auto; }
 
@@ -549,11 +737,9 @@ body {
   font-size: clamp(20px, 2.2vw, 28px);
   font-weight: 550;
   letter-spacing: -0.022em;
-  line-height: 1.2;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.25;
   overflow: hidden;
+  white-space: nowrap;
 }
 
 .media__artist {
@@ -964,6 +1150,7 @@ html[data-booting="true"] .meta__v {
   .dial { width: 82px; height: 82px; }
   .dial__num { font-size: 23px; }
   .media__art { width: 176px; height: 176px; }
+  .media__spectrum { height: 66px; }
   .stat dd { font-size: 15px; }
   .tbtn--main { width: 48px; height: 48px; font-size: 20px; }
 }
@@ -983,6 +1170,7 @@ html[data-booting="true"] .meta__v {
   }
   .clock__hm { font-size: clamp(56px, 15vw, 132px); }
   .media__art { width: 164px; height: 164px; }
+  .media__spectrum { height: 62px; }
 
   /* Below this width the three instruments are full cards stacked down the
      page, not a strip, so they get their space back. */
@@ -993,19 +1181,12 @@ html[data-booting="true"] .meta__v {
   .mem__num { font-size: clamp(40px, 6vw, 58px); }
   .cores { height: 34px; padding-top: 14px; }
 
-  /* Full-width clock: the time reads left, its context sits alongside rather
-     than leaving half the tile empty. */
-  .tile--clock { flex-direction: row; align-items: flex-end; gap: 26px; }
+  /* Stacked, same as the wide layout: time, forecast, then the footer. The
+     side-by-side variant existed only to fill an empty tile, and the weather
+     does that job now. */
+  .tile--clock { flex-direction: column; align-items: stretch; gap: 12px; }
   .clock { flex: 1 1 auto; }
-  .clock__foot {
-    flex: 0 0 auto;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 0 0 8px 24px;
-    border-top: 0;
-    border-left: 1px solid var(--stroke-soft);
-  }
+  .wx__hours { display: flex; }
 }
 
 /* Phone and small tablets: one column, same order. */
@@ -1020,18 +1201,15 @@ html[data-booting="true"] .meta__v {
       "media" "clock" "cpu" "gpu" "mem";
   }
   .media__main { gap: 14px; }
-  .media__art { width: 92px; height: 92px; border-radius: 16px; }
+  .media__art { width: 96px; height: 96px; padding: 5px; }
+  .media__plate { border-radius: 12px; }
+  .media__spectrum { height: 52px; }
   .media__foot { flex-wrap: wrap; gap: 12px; }
   .volume { flex: 1 1 100%; }
   .clock__hm { font-size: clamp(52px, 18vw, 88px); }
-  .tile--clock { flex-direction: column; align-items: stretch; gap: 12px; }
-  .clock__foot {
-    flex-direction: row;
-    gap: 22px;
-    padding: 12px 0 0;
-    border-top: 1px solid var(--stroke-soft);
-    border-left: 0;
-  }
+  .wx__temp { font-size: 34px; }
+  .wx__now { gap: 11px; }
+  .wx__icon { font-size: 32px; }
   .stats { gap: 8px 12px; }
 }
 

@@ -11,6 +11,7 @@ import os
 import socket
 import sys
 import time
+from urllib.parse import quote
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 
@@ -21,12 +22,20 @@ from fastapi.staticfiles import StaticFiles
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from server import access  # noqa: E402
+from server.audio import SpectrumTap  # noqa: E402
 from server.hardware import HardwareMonitor  # noqa: E402
+from server.weather import WeatherFeed  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB = os.path.join(ROOT, "web")
+AMBIENT_DIR = os.path.join(WEB, "ambient")
+AMBIENT_VIDEO = (".mp4", ".webm", ".m4v", ".ogv")
+AMBIENT_IMAGE = (".gif", ".jpg", ".jpeg", ".png", ".webp", ".avif")
 INTERVAL = float(os.environ.get("SLATE_INTERVAL", "1.0"))
 HISTORY_LEN = 120
+# The spectrum needs its own cadence: telemetry once a second, bars ~25 times
+# a second, both down the same socket.
+FFT_INTERVAL = 1.0 / 25.0
 
 try:
     from server.media import MediaHub, SystemVolume
@@ -45,6 +54,8 @@ class Hub:
         self.hw = None
         self.media = None
         self.volume = None
+        self.audio = SpectrumTap()
+        self.weather = WeatherFeed()
         self.latest_stats = None
         self.latest_media = None
         self.history = {
@@ -57,6 +68,7 @@ class Hub:
         }
         self._hw_ex = ThreadPoolExecutor(max_workers=1, thread_name_prefix="slate-hw")
         self._task = None
+        self._fft_task = None
 
     async def start(self):
         loop = asyncio.get_running_loop()
@@ -66,13 +78,19 @@ class Hub:
         if MediaHub is not None:
             self.volume = SystemVolume()
             self.media = MediaHub(self.volume)
+        self.audio.start()
+        # Warm the forecast before the first tablet connects, off the loop.
+        loop.run_in_executor(None, self.weather.fetch)
         self._task = asyncio.create_task(self._run())
+        self._fft_task = asyncio.create_task(self._run_fft())
 
     async def stop(self):
-        if self._task:
-            self._task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await self._task
+        for task in (self._task, self._fft_task):
+            if task:
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+        self.audio.stop()
         if self.hw:
             await asyncio.get_running_loop().run_in_executor(
                 self._hw_ex, self.hw.close
@@ -115,6 +133,13 @@ class Hub:
                 except Exception as exc:
                     await self.broadcast({"type": "error", "where": "stats",
                                           "message": str(exc)})
+                if self.weather.due():
+                    try:
+                        await loop.run_in_executor(None, self.weather.fetch)
+                        await self.broadcast(
+                            dict(self.weather.state(), type="weather"))
+                    except Exception as exc:
+                        access.log.info("weather refresh failed: %s", exc)
                 if self.media is not None:
                     try:
                         self.volume.refresh()
@@ -126,6 +151,22 @@ class Hub:
                                               "message": str(exc)})
             elapsed = time.perf_counter() - started
             await asyncio.sleep(max(0.05, INTERVAL - elapsed))
+
+    async def _run_fft(self):
+        """Push spectrum frames while there is sound and somebody watching."""
+        settled = True
+        while True:
+            if self.clients:
+                frame = self.audio.frame()
+                if frame is not None:
+                    settled = False
+                    await self.broadcast({"type": "fft", "b": frame})
+                elif not settled:
+                    # One zeroed frame so the bars fall to rest rather than
+                    # freezing mid-air when the music stops.
+                    settled = True
+                    await self.broadcast({"type": "fft", "b": [0] * self.audio.bands})
+            await asyncio.sleep(FFT_INTERVAL)
 
     async def broadcast(self, payload):
         if not self.clients:
@@ -193,6 +234,10 @@ def _print_banner():
         print("  speeds need admin rights; use run-admin.bat for those.")
     if MEDIA_IMPORT_ERROR:
         print("  Media controls unavailable: {0}".format(MEDIA_IMPORT_ERROR))
+    if hub.audio.available:
+        print("  Spectrum tapping {0}".format(hub.audio.device_name))
+    elif hub.audio.error:
+        print("  Spectrum unavailable: {0}".format(hub.audio.error))
     print("", flush=True)
 
 
@@ -217,9 +262,29 @@ async def state():
         {
             "stats": hub.latest_stats,
             "media": hub.latest_media,
+            "audio": hub.audio.state(),
+            "weather": hub.weather.state(),
             "history": hub.history_payload(),
         }
     )
+
+
+@app.get("/api/ambient")
+async def ambient():
+    """Whatever the user dropped into web/ambient, in a stable order."""
+    items = []
+    if os.path.isdir(AMBIENT_DIR):
+        for name in sorted(os.listdir(AMBIENT_DIR)):
+            lower = name.lower()
+            if lower.endswith(AMBIENT_VIDEO):
+                kind = "video"
+            elif lower.endswith(AMBIENT_IMAGE):
+                kind = "image"
+            else:
+                continue
+            items.append({"url": "/ambient/" + quote(name), "kind": kind,
+                          "name": name})
+    return JSONResponse({"items": items})
 
 
 @app.get("/api/clients")
@@ -264,6 +329,8 @@ async def ws(websocket: WebSocket):
                 "interval": INTERVAL,
                 "media_available": hub.media is not None,
                 "media_error": MEDIA_IMPORT_ERROR,
+                "audio": hub.audio.state(),
+                "weather": hub.weather.state(),
                 "history": hub.history_payload(),
                 "stats": hub.latest_stats,
                 "media": hub.latest_media,

@@ -1,3 +1,7 @@
 .venv/
 __pycache__/
 logs/
+
+# ambient clips are personal and large
+web/ambient/*
+!web/ambient/README.txt
