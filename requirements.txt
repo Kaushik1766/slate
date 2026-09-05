@@ -1,0 +1,12 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+psutil>=6.0
+pythonnet>=3.0
+pycaw>=20240210
+comtypes>=1.4
+winrt-runtime>=3.0
+winrt-Windows.Media>=3.0
+winrt-Windows.Media.Control>=3.0
+winrt-Windows.Storage.Streams>=3.0
+winrt-Windows.Foundation>=3.0
+winrt-Windows.Foundation.Collections>=3.0

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" data-booting="true">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#06080b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Slate</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="/vendor/phosphor/style.css">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- Ambient layer. The blurred artwork is what the glass actually refracts;
+     without something behind it, frosted panels read as flat grey boxes. -->
+<div class="ambient" aria-hidden="true">
+  <div class="ambient__art" id="ambientArt"></div>
+  <div class="ambient__glow ambient__glow--a"></div>
+  <div class="ambient__glow ambient__glow--b"></div>
+</div>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <header class="rail">
+    <div class="rail__id">
+      <span class="rail__host" id="hostName">&nbsp;</span>
+      <span class="rail__os" id="osName"></span>
+    </div>
+
+    <div class="rail__link" id="connChip" data-state="connecting">
+      <i class="ph ph-circle-notch" id="connIcon" aria-hidden="true"></i>
+      <span id="connText">Connecting</span>
+    </div>
+
+    <div class="rail__actions">
+      <button type="button" class="iconbtn" id="wakeBtn" aria-pressed="false"
+              title="Keep the screen awake">
+        <i class="ph ph-eye" aria-hidden="true"></i>
+        <span class="sr-only">Keep the screen awake</span>
+      </button>
+      <button type="button" class="iconbtn" id="themeBtn" title="Switch theme">
+        <i class="ph ph-sun" id="themeIcon" aria-hidden="true"></i>
+        <span class="sr-only">Switch between light and dark</span>
+      </button>
+      <button type="button" class="iconbtn" id="fsBtn" title="Full screen">
+        <i class="ph ph-arrows-out" id="fsIcon" aria-hidden="true"></i>
+        <span class="sr-only">Toggle full screen</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="grid">
+
+    <!-- ---------------------------------------------------------- clock -->
+    <section class="tile tile--clock">
+      <div class="clock">
+        <div class="clock__time">
+          <span class="clock__hm" id="clockHM">--:--</span><span class="clock__s" id="clockS">00</span>
+        </div>
+        <div class="clock__date" id="clockDate">&nbsp;</div>
+      </div>
+      <div class="clock__foot">
+        <span class="meta"><span class="meta__k">Up</span><span class="meta__v num" id="uptime">--</span></span>
+        <span class="meta"><span class="meta__k">Tasks</span><span class="meta__v num" id="procs">--</span></span>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------- media -->
+    <section class="tile tile--media" id="mediaTile" data-state="idle">
+
+      <div class="media__main">
+        <div class="media__art" id="artFrame">
+          <img id="artImg" alt="" hidden>
+          <div class="media__art-empty" aria-hidden="true"><i class="ph ph-music-notes"></i></div>
+        </div>
+
+        <div class="media__body">
+          <div class="media__source" id="mediaSource"></div>
+          <h1 class="media__title" id="mediaTitle">Nothing playing</h1>
+          <p class="media__artist" id="mediaArtist">Start something on this PC and it shows up here.</p>
+
+          <div class="media__scrub" id="scrub">
+            <span class="num media__t" id="posText">0:00</span>
+            <input type="range" class="range range--seek" id="seek"
+                   min="0" max="1000" value="0" step="1" aria-label="Playback position">
+            <span class="num media__t" id="durText">0:00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="media__foot">
+        <div class="transport">
+          <button type="button" class="tbtn" id="prevBtn" title="Previous">
+            <i class="ph ph-skip-back" aria-hidden="true"></i><span class="sr-only">Previous track</span>
+          </button>
+          <button type="button" class="tbtn tbtn--main" id="playBtn" title="Play or pause">
+            <i class="ph ph-play" id="playIcon" aria-hidden="true"></i><span class="sr-only">Play or pause</span>
+          </button>
+          <button type="button" class="tbtn" id="nextBtn" title="Next">
+            <i class="ph ph-skip-forward" aria-hidden="true"></i><span class="sr-only">Next track</span>
+          </button>
+        </div>
+
+        <div class="volume" id="volumeWrap">
+          <button type="button" class="iconbtn iconbtn--flush" id="muteBtn" title="Mute">
+            <i class="ph ph-speaker-high" id="muteIcon" aria-hidden="true"></i>
+            <span class="sr-only">Mute or unmute</span>
+          </button>
+          <input type="range" class="range range--vol" id="vol"
+                 min="0" max="100" value="0" step="1" aria-label="System volume">
+          <span class="num volume__pct" id="volText">--</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------ cpu -->
+    <section class="tile tile--cpu">
+      <div class="tile__head">
+        <span class="tile__label"><i class="ph ph-cpu" aria-hidden="true"></i>Processor</span>
+        <span class="tile__name" id="cpuName">&nbsp;</span>
+      </div>
+
+      <div class="readout">
+        <div class="dial" id="cpuDial">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="dial__track" cx="60" cy="60" r="52"></circle>
+            <circle class="dial__value" id="cpuArc" cx="60" cy="60" r="52"></circle>
+          </svg>
+          <div class="dial__center">
+            <span class="dial__num num" id="cpuLoad">--</span><span class="dial__unit">%</span>
+          </div>
+        </div>
+
+        <dl class="stats">
+          <div class="stat"><dt>Temp</dt><dd class="num" id="cpuTemp">--</dd></div>
+          <div class="stat"><dt>Clock</dt><dd class="num" id="cpuClock">--</dd></div>
+          <div class="stat"><dt>Power</dt><dd class="num" id="cpuPower">--</dd></div>
+          <div class="stat"><dt>Fan</dt><dd class="num" id="cpuFan">--</dd></div>
+        </dl>
+      </div>
+
+      <div class="cores" id="cores" role="img" aria-label="Per-core load"></div>
+    </section>
+
+    <!-- ------------------------------------------------------------ gpu -->
+    <section class="tile tile--gpu">
+      <div class="tile__head">
+        <span class="tile__label"><i class="ph ph-graphics-card" aria-hidden="true"></i>Graphics</span>
+        <span class="tile__name" id="gpuName">&nbsp;</span>
+      </div>
+
+      <div class="readout">
+        <div class="dial" id="gpuDial">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="dial__track" cx="60" cy="60" r="52"></circle>
+            <circle class="dial__value" id="gpuArc" cx="60" cy="60" r="52"></circle>
+          </svg>
+          <div class="dial__center">
+            <span class="dial__num num" id="gpuLoad">--</span><span class="dial__unit">%</span>
+          </div>
+        </div>
+
+        <dl class="stats">
+          <div class="stat"><dt>Temp</dt><dd class="num" id="gpuTemp">--</dd></div>
+          <div class="stat"><dt>Hot spot</dt><dd class="num" id="gpuHot">--</dd></div>
+          <div class="stat"><dt>Power</dt><dd class="num" id="gpuPower">--</dd></div>
+          <div class="stat"><dt>Clock</dt><dd class="num" id="gpuClock">--</dd></div>
+        </dl>
+      </div>
+
+      <div class="bar-row">
+        <div class="bar-row__head">
+          <span>VRAM</span><span class="num" id="vramText">--</span>
+        </div>
+        <div class="bar"><span class="bar__fill" id="vramBar"></span></div>
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------- memory -->
+    <section class="tile tile--mem">
+      <div class="tile__head">
+        <span class="tile__label"><i class="ph ph-memory" aria-hidden="true"></i>Memory</span>
+      </div>
+
+      <div class="mem">
+        <div class="mem__figure">
+          <span class="mem__num num" id="ramPct">--</span><span class="mem__unit">%</span>
+        </div>
+        <div class="mem__detail num" id="ramText">-- / -- GB</div>
+      </div>
+
+      <div class="ladder" id="ramLadder" role="img" aria-label="Memory in use"></div>
+
+      <div class="mem__foot">
+        <span class="meta"><span class="meta__k">Swap</span><span class="meta__v num" id="swapText">--</span></span>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- activity -->
+    <section class="tile tile--activity">
+      <div class="tile__head">
+        <span class="tile__label"><i class="ph ph-broadcast" aria-hidden="true"></i>Last two minutes</span>
+        <span class="legend">
+          <span class="legend__item legend__item--cpu">CPU</span>
+          <span class="legend__item legend__item--gpu">GPU</span>
+        </span>
+      </div>
+
+      <div class="chart"><canvas id="chart"></canvas></div>
+
+      <div class="net">
+        <span class="net__item"><i class="ph ph-arrow-down" aria-hidden="true"></i><span class="num" id="netDown">0</span></span>
+        <span class="net__item"><i class="ph ph-arrow-up" aria-hidden="true"></i><span class="num" id="netUp">0</span></span>
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------- system -->
+    <section class="tile tile--system">
+      <div class="tile__head">
+        <span class="tile__label"><i class="ph ph-hard-drives" aria-hidden="true"></i>Storage</span>
+      </div>
+
+      <div class="disks" id="disks"></div>
+
+      <div class="power" id="powerRow" hidden>
+        <i class="ph ph-battery-high" id="battIcon" aria-hidden="true"></i>
+        <div class="power__bar bar"><span class="bar__fill" id="battBar"></span></div>
+        <span class="num power__pct" id="battText">--</span>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
