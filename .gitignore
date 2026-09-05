@@ -5,3 +5,6 @@ logs/
 # ambient clips are personal and large
 web/ambient/*
 !web/ambient/README.txt
+
+# scratch worktrees
+.claude/worktrees/
