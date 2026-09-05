@@ -23,8 +23,8 @@
   --bg-rgb: 6, 8, 11;
   --text-rgb: 238, 242, 244;
   --text: rgba(238, 242, 244, 1);
-  --text-dim: rgba(238, 242, 244, 0.6);
-  --text-faint: rgba(238, 242, 244, 0.34);
+  --text-dim: rgba(238, 242, 244, 0.74);
+  --text-faint: rgba(238, 242, 244, 0.54);
 
   --glass-a: rgba(255, 255, 255, 0.075);
   --glass-b: rgba(255, 255, 255, 0.022);
@@ -33,12 +33,14 @@
   --stroke-soft: rgba(255, 255, 255, 0.06);
   --highlight: rgba(255, 255, 255, 0.16);
   --shade: rgba(2, 4, 8, 0.44);
-  --track: rgba(255, 255, 255, 0.09);
+  --track: rgba(255, 255, 255, 0.13);
 
   --art-opacity: 0.44;
   --glow-opacity: 0.5;
   --grain-opacity: 0.035;
   --scrim: rgba(6, 8, 11, 0.46);
+  --lift-y: 18px;
+  --lift-blur: 44px;
 
   --r-tile: 24px;
   --r-chip: 10px;
@@ -51,50 +53,54 @@
    stays; the panels flip to bright frosted glass over it. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #e9edf1;
-    --bg-rgb: 233, 237, 241;
-    --text-rgb: 14, 18, 23;
-    --text: rgba(14, 18, 23, 1);
-    --text-dim: rgba(14, 18, 23, 0.62);
-    --text-faint: rgba(14, 18, 23, 0.38);
+    --bg: #d7dee7;
+    --bg-rgb: 215, 222, 231;
+    --text-rgb: 12, 16, 21;
+    --text: rgba(12, 16, 21, 1);
+    --text-dim: rgba(12, 16, 21, 0.78);
+    --text-faint: rgba(12, 16, 21, 0.64);
 
-    --glass-a: rgba(255, 255, 255, 0.66);
-    --glass-b: rgba(255, 255, 255, 0.34);
-    --glass-solid: rgba(252, 253, 255, 0.94);
-    --stroke: rgba(14, 18, 23, 0.09);
-    --stroke-soft: rgba(14, 18, 23, 0.05);
-    --highlight: rgba(255, 255, 255, 0.9);
-    --shade: rgba(24, 34, 48, 0.12);
-    --track: rgba(14, 18, 23, 0.1);
+    --glass-a: rgba(255, 255, 255, 0.82);
+    --glass-b: rgba(255, 255, 255, 0.58);
+    --glass-solid: rgba(252, 253, 255, 0.97);
+    --stroke: rgba(12, 16, 21, 0.12);
+    --stroke-soft: rgba(12, 16, 21, 0.08);
+    --highlight: rgba(255, 255, 255, 0.95);
+    --shade: rgba(21, 32, 48, 0.3);
+    --track: rgba(12, 16, 21, 0.17);
 
-    --art-opacity: 0.34;
-    --glow-opacity: 0.34;
-    --grain-opacity: 0.02;
-    --scrim: rgba(233, 237, 241, 0.5);
+    --art-opacity: 0.6;
+    --glow-opacity: 0.42;
+    --grain-opacity: 0.022;
+    --scrim: rgba(226, 232, 240, 0.34);
+  --lift-y: 20px;
+  --lift-blur: 38px;
   }
 }
 
 :root[data-theme="light"] {
-  --bg: #e9edf1;
-  --bg-rgb: 233, 237, 241;
-  --text-rgb: 14, 18, 23;
-  --text: rgba(14, 18, 23, 1);
-  --text-dim: rgba(14, 18, 23, 0.62);
-  --text-faint: rgba(14, 18, 23, 0.38);
+  --bg: #d7dee7;
+  --bg-rgb: 215, 222, 231;
+  --text-rgb: 12, 16, 21;
+  --text: rgba(12, 16, 21, 1);
+  --text-dim: rgba(12, 16, 21, 0.78);
+  --text-faint: rgba(12, 16, 21, 0.64);
 
-  --glass-a: rgba(255, 255, 255, 0.66);
-  --glass-b: rgba(255, 255, 255, 0.34);
-  --glass-solid: rgba(252, 253, 255, 0.94);
-  --stroke: rgba(14, 18, 23, 0.09);
-  --stroke-soft: rgba(14, 18, 23, 0.05);
-  --highlight: rgba(255, 255, 255, 0.9);
-  --shade: rgba(24, 34, 48, 0.12);
-  --track: rgba(14, 18, 23, 0.1);
+  --glass-a: rgba(255, 255, 255, 0.82);
+  --glass-b: rgba(255, 255, 255, 0.58);
+  --glass-solid: rgba(252, 253, 255, 0.97);
+  --stroke: rgba(12, 16, 21, 0.12);
+  --stroke-soft: rgba(12, 16, 21, 0.08);
+  --highlight: rgba(255, 255, 255, 0.95);
+  --shade: rgba(21, 32, 48, 0.3);
+  --track: rgba(12, 16, 21, 0.17);
 
-  --art-opacity: 0.34;
-  --glow-opacity: 0.34;
-  --grain-opacity: 0.02;
-  --scrim: rgba(233, 237, 241, 0.5);
+  --art-opacity: 0.6;
+  --glow-opacity: 0.42;
+  --grain-opacity: 0.022;
+  --scrim: rgba(226, 232, 240, 0.34);
+  --lift-y: 20px;
+  --lift-blur: 38px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -323,11 +329,10 @@ body {
   display: grid;
   gap: var(--gap);
   grid-template-columns: repeat(12, 1fr);
-  grid-template-rows: minmax(184px, 1fr) minmax(228px, 1.16fr) minmax(168px, 0.9fr);
+  grid-template-rows: minmax(230px, 1fr) minmax(176px, auto);
   grid-template-areas:
     "clock clock clock clock clock media media media media media media media"
-    "cpu   cpu   cpu   cpu   cpu   gpu   gpu   gpu   gpu   mem   mem   mem"
-    "act   act   act   act   act   act   act   sys   sys   sys   sys   sys";
+    "cpu   cpu   cpu   cpu   gpu   gpu   gpu   gpu   gpu   mem   mem   mem";
 }
 
 .tile {
@@ -346,7 +351,7 @@ body {
   box-shadow:
     inset 0 1px 0 var(--highlight),
     inset 0 -1px 0 var(--stroke-soft),
-    0 18px 44px -22px var(--shade);
+    0 var(--lift-y, 18px) var(--lift-blur, 44px) -22px var(--shade);
   overflow: hidden;
 }
 
@@ -370,8 +375,6 @@ body {
 .tile--cpu   { grid-area: cpu; }
 .tile--gpu   { grid-area: gpu; }
 .tile--mem   { grid-area: mem; }
-.tile--activity { grid-area: act; }
-.tile--system   { grid-area: sys; }
 
 /* Tiles arrive in reading order once, on load. Nothing loops. */
 @media (prefers-reduced-motion: no-preference) {
@@ -385,8 +388,6 @@ body {
   .tile--cpu   { animation-delay: 150ms; }
   .tile--gpu   { animation-delay: 195ms; }
   .tile--mem   { animation-delay: 240ms; }
-  .tile--activity { animation-delay: 290ms; }
-  .tile--system   { animation-delay: 330ms; }
 }
 
 @keyframes tileIn {
@@ -425,11 +426,26 @@ body {
   min-width: 0;
 }
 
+/* The instrument row is denser than the two panels above it: smaller
+   padding, smaller gaps, numbers doing the talking. */
+.tile--cpu, .tile--gpu, .tile--mem { padding: 14px 16px; gap: 9px; }
+
+.tile--cpu .stats {
+  grid-template-columns: repeat(2, max-content);
+  gap: 9px 34px;
+  justify-content: start;
+}
+
 /* ------------------------------------------------------------------ clock */
 
-.tile--clock { justify-content: space-between; }
+.tile--clock { justify-content: flex-start; }
 
-.clock { display: flex; flex-direction: column; gap: 2px; }
+.clock {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.clock { display: flex; flex-direction: column; gap: 2px; min-height: 0; }
 
 .clock__time {
   display: flex;
@@ -440,14 +456,14 @@ body {
 }
 
 .clock__hm {
-  font-size: clamp(52px, 8.4vw, 104px);
+  font-size: clamp(52px, 10.5vw, 138px);
   font-weight: 500;
   letter-spacing: -0.045em;
   line-height: 1;
 }
 
 .clock__s {
-  font-size: clamp(18px, 2.4vw, 30px);
+  font-size: clamp(18px, 2.6vw, 34px);
   font-weight: 400;
   color: rgba(var(--accent-rgb), 0.92);
   letter-spacing: -0.02em;
@@ -486,9 +502,9 @@ body {
 .media__art {
   position: relative;
   flex: 0 0 auto;
-  width: 116px;
-  height: 116px;
-  border-radius: 18px;
+  width: 228px;
+  height: 228px;
+  border-radius: 22px;
   overflow: hidden;
   border: 1px solid var(--stroke);
   background: rgba(var(--accent-rgb), 0.1);
@@ -530,7 +546,7 @@ body {
 
 .media__title {
   margin: 2px 0 3px;
-  font-size: clamp(19px, 2.1vw, 25px);
+  font-size: clamp(20px, 2.2vw, 28px);
   font-weight: 550;
   letter-spacing: -0.022em;
   line-height: 1.2;
@@ -684,15 +700,15 @@ body {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 15px;
   min-height: 0;
 }
 
 .dial {
   position: relative;
   flex: 0 0 auto;
-  width: 116px;
-  height: 116px;
+  width: 88px;
+  height: 88px;
 }
 
 .dial svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
@@ -700,13 +716,13 @@ body {
 .dial__track {
   fill: none;
   stroke: var(--track);
-  stroke-width: 7;
+  stroke-width: 8;
 }
 
 .dial__value {
   fill: none;
   stroke: rgba(var(--accent-rgb), 1);
-  stroke-width: 7;
+  stroke-width: 8;
   stroke-linecap: round;
   stroke-dasharray: 326.73;
   stroke-dashoffset: 326.73;
@@ -723,17 +739,17 @@ body {
 }
 
 .dial__num {
-  font-size: 30px;
+  font-size: 25px;
   font-weight: 500;
   letter-spacing: -0.04em;
 }
 
 .dial__unit {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text-faint);
   align-self: center;
   position: relative;
-  top: 7px;
+  top: 6px;
 }
 
 .stats {
@@ -742,7 +758,7 @@ body {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px 14px;
+  gap: 8px 12px;
 }
 
 .stat { min-width: 0; }
@@ -775,8 +791,8 @@ body {
   display: flex;
   align-items: flex-end;
   gap: 3px;
-  height: 34px;
-  padding-top: 12px;
+  height: 26px;
+  padding-top: 10px;
   border-top: 1px solid var(--stroke-soft);
 }
 
@@ -803,7 +819,7 @@ body {
 
 /* ------------------------------------------------------------------- bars */
 
-.bar-row { flex: 0 0 auto; padding-top: 12px; border-top: 1px solid var(--stroke-soft); }
+.bar-row { flex: 0 0 auto; padding-top: 10px; border-top: 1px solid var(--stroke-soft); }
 
 .bar-row__head {
   display: flex;
@@ -813,7 +829,7 @@ body {
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 }
 
 .bar-row__head .num { font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--text-dim); }
@@ -845,21 +861,21 @@ body {
 .mem__figure { display: flex; align-items: baseline; gap: 3px; }
 
 .mem__num {
-  font-size: clamp(40px, 4.4vw, 56px);
+  font-size: clamp(34px, 3.4vw, 46px);
   font-weight: 500;
   letter-spacing: -0.045em;
   line-height: 1;
 }
 
-.mem__unit { font-size: 17px; color: var(--text-faint); }
+.mem__unit { font-size: 15px; color: var(--text-faint); }
 
-.mem__detail { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+.mem__detail { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; }
 
 /* 20 rungs: reads as a gauge at a glance, exact to 5% up close */
 .ladder {
   display: flex;
   gap: 3px;
-  height: 26px;
+  height: 20px;
   align-items: stretch;
 }
 
@@ -873,83 +889,7 @@ body {
 .rung[data-on="true"] { background: rgba(var(--accent-rgb), 0.85); }
 .rung[data-on="edge"] { background: rgba(var(--accent-rgb), 0.4); }
 
-.mem__foot { padding-top: 12px; border-top: 1px solid var(--stroke-soft); }
-
-/* --------------------------------------------------------------- activity */
-
-.legend { display: flex; gap: 12px; }
-
-.legend__item {
-  font-size: 10.5px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.legend__item::before {
-  content: "";
-  width: 8px;
-  height: 2px;
-  border-radius: 2px;
-  background: currentColor;
-}
-
-.legend__item--cpu { color: rgba(var(--accent-rgb), 0.95); }
-.legend__item--gpu { color: var(--text-dim); }
-
-.chart { flex: 1 1 auto; min-height: 0; position: relative; }
-.chart canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-
-.net {
-  flex: 0 0 auto;
-  display: flex;
-  gap: 22px;
-  padding-top: 11px;
-  border-top: 1px solid var(--stroke-soft);
-}
-
-.net__item {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-.net__item i { font-size: 13px; color: var(--text-faint); }
-
-/* ---------------------------------------------------------------- storage */
-
-.disks { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 13px; }
-
-.disk__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 7px;
-  gap: 10px;
-}
-
-.disk__name { font-size: 13px; font-weight: 500; }
-.disk__free { font-size: 12px; color: var(--text-faint); }
-
-.power {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding-top: 12px;
-  border-top: 1px solid var(--stroke-soft);
-}
-
-.power i { font-size: 18px; color: var(--text-dim); }
-.power__bar { flex: 1 1 auto; }
-.power__pct { font-size: 13px; color: var(--text-dim); flex: 0 0 auto; }
-.power[data-charging="true"] i { color: rgba(var(--accent-rgb), 1); }
-.power[data-low="true"] i, .power[data-low="true"] .power__pct { color: rgb(var(--hot-rgb)); }
+.mem__foot { padding-top: 10px; border-top: 1px solid var(--stroke-soft); }
 
 /* ------------------------------------------------------- loading skeleton */
 
@@ -1009,7 +949,9 @@ html[data-booting="true"] .meta__v {
   .shell { height: 100vh; height: 100dvh; overflow: hidden; }
   .grid {
     min-height: 0;
-    grid-template-rows: 1.05fr 1.12fr 0.9fr;
+    /* The instrument strip is a fixed band. Everything left over goes to the
+       clock and the player, which is where a glance actually lands. */
+    grid-template-rows: 1fr 184px;
   }
 }
 
@@ -1019,9 +961,9 @@ html[data-booting="true"] .meta__v {
 @media (max-width: 1180px) {
   :root { --gap: 12px; }
   .tile { padding: 15px 16px; }
-  .dial { width: 100px; height: 100px; }
-  .dial__num { font-size: 26px; }
-  .media__art { width: 100px; height: 100px; }
+  .dial { width: 82px; height: 82px; }
+  .dial__num { font-size: 23px; }
+  .media__art { width: 176px; height: 176px; }
   .stat dd { font-size: 15px; }
   .tbtn--main { width: 48px; height: 48px; font-size: 20px; }
 }
@@ -1037,11 +979,19 @@ html[data-booting="true"] .meta__v {
       "media media"
       "clock clock"
       "cpu   gpu"
-      "mem   sys"
-      "act   act";
+      "mem   mem";
   }
-  .clock__hm { font-size: clamp(56px, 13vw, 96px); }
-  .tile--activity { min-height: 210px; }
+  .clock__hm { font-size: clamp(56px, 15vw, 132px); }
+  .media__art { width: 164px; height: 164px; }
+
+  /* Below this width the three instruments are full cards stacked down the
+     page, not a strip, so they get their space back. */
+  .tile--cpu, .tile--gpu, .tile--mem { padding: 18px 20px; gap: 14px; }
+  .dial { width: 112px; height: 112px; }
+  .dial__num { font-size: 30px; }
+  .ladder { height: 34px; }
+  .mem__num { font-size: clamp(40px, 6vw, 58px); }
+  .cores { height: 34px; padding-top: 14px; }
 
   /* Full-width clock: the time reads left, its context sits alongside rather
      than leaving half the tile empty. */
@@ -1067,13 +1017,12 @@ html[data-booting="true"] .meta__v {
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: minmax(0, auto);
     grid-template-areas:
-      "media" "clock" "cpu" "gpu" "mem" "act" "sys";
+      "media" "clock" "cpu" "gpu" "mem";
   }
   .media__main { gap: 14px; }
-  .media__art { width: 84px; height: 84px; border-radius: 14px; }
+  .media__art { width: 92px; height: 92px; border-radius: 16px; }
   .media__foot { flex-wrap: wrap; gap: 12px; }
   .volume { flex: 1 1 100%; }
-  .tile--activity { min-height: 190px; }
   .clock__hm { font-size: clamp(52px, 18vw, 88px); }
   .tile--clock { flex-direction: column; align-items: stretch; gap: 12px; }
   .clock__foot {

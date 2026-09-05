@@ -31,31 +31,24 @@
     volText: $("volText"), volumeWrap: $("volumeWrap"),
 
     cpuName: $("cpuName"), cpuArc: $("cpuArc"), cpuLoad: $("cpuLoad"),
-    cpuTemp: $("cpuTemp"), cpuClock: $("cpuClock"), cpuPower: $("cpuPower"),
-    cpuFan: $("cpuFan"), cores: $("cores"),
+    cpuTemp: $("cpuTemp"), cpuPower: $("cpuPower"), cores: $("cores"),
 
     gpuName: $("gpuName"), gpuArc: $("gpuArc"), gpuLoad: $("gpuLoad"),
     gpuTemp: $("gpuTemp"), gpuHot: $("gpuHot"), gpuPower: $("gpuPower"),
     gpuClock: $("gpuClock"), vramText: $("vramText"), vramBar: $("vramBar"),
 
     ramPct: $("ramPct"), ramText: $("ramText"), ramLadder: $("ramLadder"),
-    swapText: $("swapText"),
-
-    chart: $("chart"), netUp: $("netUp"), netDown: $("netDown"),
-    disks: $("disks"), powerRow: $("powerRow"), battIcon: $("battIcon"),
-    battBar: $("battBar"), battText: $("battText"), toast: $("toast")
+    swapText: $("swapText"), toast: $("toast")
   };
 
   var DIAL_CIRCUMFERENCE = 326.73;   // 2 * pi * r, r = 52 in the SVG viewBox
   var LADDER_RUNGS = 20;
-  var HISTORY_MAX = 120;
 
   var state = {
     booting: true,
     socket: null,
     retry: 0,
     coreCount: 0,
-    diskKey: "",
     artRev: -1,
     accent: { h: 168, s: 0.52 },     // mint, until artwork says otherwise
     media: null,
@@ -66,7 +59,6 @@
     seekHeldUntil: 0,
     hint: null,
     hintShown: false,
-    history: { cpu: [], gpu: [] },
     reduceMotion: false
   };
 
@@ -95,12 +87,6 @@
     if (d > 0) return d + "d " + h + "h";
     if (h > 0) return h + "h " + m + "m";
     return m + "m";
-  }
-
-  function fmtRate(bps) {
-    if (bps < 1024) return Math.round(bps) + " B/s";
-    if (bps < 1048576) return (bps / 1024).toFixed(bps < 10240 ? 1 : 0) + " KB/s";
-    return (bps / 1048576).toFixed(bps < 10485760 ? 1 : 0) + " MB/s";
   }
 
   function heat(value, warm, hot) {
@@ -168,7 +154,7 @@
   function applyAccent() {
     var light = isLightTheme();
     var s = Math.min(0.82, Math.max(0.34, state.accent.s));
-    var rgb = hslToRgb(state.accent.h, s, light ? 0.38 : 0.66);
+    var rgb = hslToRgb(state.accent.h, s, light ? 0.32 : 0.66);
     el.root.style.setProperty("--accent-rgb", rgb[0] + ", " + rgb[1] + ", " + rgb[2]);
   }
 
@@ -276,9 +262,7 @@
     } else {
       setStat(el.cpuTemp, s.caps && s.caps.admin ? "no sensor" : "needs admin", "", true);
     }
-    setStat(el.cpuClock, cpu.clock ? (cpu.clock / 1000).toFixed(1) + " GHz" : "--", "", !cpu.clock);
     setStat(el.cpuPower, cpu.power ? Math.round(cpu.power) + " W" : "--", "", !cpu.power);
-    setStat(el.cpuFan, cpu.fan ? cpu.fan + " rpm" : "--", "", !cpu.fan);
 
     if (cpu.cores && cpu.cores.length !== state.coreCount) buildCores(cpu.cores.length);
     if (cpu.cores) {
@@ -330,54 +314,7 @@
     el.host.textContent = s.sys.host;
     el.os.textContent = s.sys.os;
 
-    el.netDown.textContent = fmtRate(s.net.down_bps);
-    el.netUp.textContent = fmtRate(s.net.up_bps);
-
-    renderDisks(s.disks);
-    renderBattery(s.battery);
     renderNotice(s.caps);
-
-    pushHistory(cpu.load, gpu ? gpu.load : null);
-    drawChart();
-  }
-
-  function renderDisks(disks) {
-    if (!disks) return;
-    var key = disks.map(function (d) { return d.mount; }).join("|");
-    if (key !== state.diskKey) {
-      state.diskKey = key;
-      el.disks.innerHTML = "";
-      disks.forEach(function (d) {
-        var wrap = document.createElement("div");
-        wrap.className = "disk";
-        wrap.innerHTML =
-          '<div class="disk__head"><span class="disk__name">' + d.mount +
-          '</span><span class="disk__free num" data-free></span></div>' +
-          '<div class="bar"><span class="bar__fill" data-fill></span></div>';
-        el.disks.appendChild(wrap);
-      });
-    }
-    var rows = el.disks.children;
-    for (var i = 0; i < rows.length && i < disks.length; i++) {
-      var d = disks[i];
-      rows[i].querySelector("[data-free]").textContent =
-        (d.total_gb - d.used_gb).toFixed(0) + " GB free";
-      rows[i].querySelector("[data-fill]").style.transform =
-        "scaleX(" + (d.pct / 100).toFixed(3) + ")";
-    }
-  }
-
-  function renderBattery(b) {
-    if (!b) { el.powerRow.hidden = true; return; }
-    el.powerRow.hidden = false;
-    el.battBar.style.transform = "scaleX(" + (b.pct / 100).toFixed(3) + ")";
-    var text = b.pct + "%";
-    if (!b.plugged && b.minutes) text += "  " + fmtUptime(b.minutes * 60) + " left";
-    el.battText.textContent = text;
-    el.powerRow.setAttribute("data-charging", b.plugged ? "true" : "false");
-    el.powerRow.setAttribute("data-low", (!b.plugged && b.pct <= 20) ? "true" : "false");
-    el.battIcon.className = "ph " + (b.plugged ? "ph-battery-charging"
-      : b.pct <= 20 ? "ph-battery-low" : "ph-battery-high");
   }
 
   var ADMIN_HINT = "Start Slate with run-admin.bat for CPU temperature, clocks and fan speed.";
@@ -395,92 +332,6 @@
       state.hintShown = true;
       window.setTimeout(function () { toast(message); }, 1400);
     }
-  }
-
-  /* ----------------------------------------------------------------- chart */
-
-  function pushHistory(cpu, gpu) {
-    state.history.cpu.push(cpu === null || cpu === undefined ? 0 : cpu);
-    state.history.gpu.push(gpu === null || gpu === undefined ? 0 : gpu);
-    while (state.history.cpu.length > HISTORY_MAX) state.history.cpu.shift();
-    while (state.history.gpu.length > HISTORY_MAX) state.history.gpu.shift();
-  }
-
-  var chartCtx = null;
-  var chartSize = { w: 0, h: 0 };
-
-  function sizeChart() {
-    var canvas = el.chart;
-    var rect = canvas.parentNode.getBoundingClientRect();
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var w = Math.max(1, Math.round(rect.width));
-    var h = Math.max(1, Math.round(rect.height));
-    if (w === chartSize.w && h === chartSize.h) return;
-    chartSize.w = w; chartSize.h = h;
-    canvas.width = Math.round(w * dpr);
-    canvas.height = Math.round(h * dpr);
-    chartCtx = canvas.getContext("2d");
-    if (chartCtx) chartCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-
-  function accentString(alpha) {
-    var v = getComputedStyle(el.root).getPropertyValue("--accent-rgb").trim();
-    return "rgba(" + (v || "86, 214, 195") + ", " + alpha + ")";
-  }
-
-  function seriesPath(ctx, values, w, h, pad) {
-    var n = HISTORY_MAX;
-    var step = w / (n - 1);
-    var offset = n - values.length;
-    ctx.beginPath();
-    for (var i = 0; i < values.length; i++) {
-      var x = (offset + i) * step;
-      var y = pad + (h - pad * 2) * (1 - Math.min(100, values[i]) / 100);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-  }
-
-  function drawChart() {
-    sizeChart();
-    if (!chartCtx) return;
-    var ctx = chartCtx, w = chartSize.w, h = chartSize.h, pad = 4;
-    ctx.clearRect(0, 0, w, h);
-
-    var textRgb = getComputedStyle(el.root).getPropertyValue("--text-rgb").trim()
-      || "238, 242, 244";
-
-    // one reference line at 50%, so a spike has something to be read against
-    ctx.strokeStyle = "rgba(" + textRgb + ", 0.09)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, Math.round(h / 2) + 0.5);
-    ctx.lineTo(w, Math.round(h / 2) + 0.5);
-    ctx.stroke();
-
-    if (state.history.cpu.length < 2) return;
-
-    // GPU sits behind, in the neutral ink, so the accent stays single-purpose
-    seriesPath(ctx, state.history.gpu, w, h, pad);
-    ctx.strokeStyle = "rgba(" + textRgb + ", 0.42)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    seriesPath(ctx, state.history.cpu, w, h, pad);
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-    var grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, accentString(0.28));
-    grad.addColorStop(1, accentString(0.01));
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    seriesPath(ctx, state.history.cpu, w, h, pad);
-    ctx.strokeStyle = accentString(0.95);
-    ctx.lineWidth = 2;
-    ctx.lineJoin = "round";
-    ctx.stroke();
   }
 
   /* ----------------------------------------------------------- media view */
@@ -690,7 +541,6 @@
     try { window.localStorage.setItem("slate.theme", next); } catch (e) {}
     resolveThemeIcon();
     applyAccent();
-    drawChart();
   });
 
   var wakeLock = null;
@@ -775,10 +625,6 @@
       var msg;
       try { msg = JSON.parse(event.data); } catch (e) { return; }
       if (msg.type === "hello") {
-        if (msg.history && msg.history.cpu) {
-          state.history.cpu = msg.history.cpu.map(function (v) { return v || 0; });
-          state.history.gpu = (msg.history.gpu || []).map(function (v) { return v || 0; });
-        }
         if (msg.stats) renderStats(msg.stats);
         if (msg.media) renderMedia(msg.media);
         if (!msg.media_available) {
@@ -830,22 +676,12 @@
       if (!state.seeking && Date.now() > state.seekHeldUntil) paintProgress();
     }, 250);
 
-    var resizeTimer = null;
-    window.addEventListener("resize", function () {
-      if (resizeTimer) window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(function () {
-        chartSize.w = 0;
-        drawChart();
-      }, 140);
-    });
-
     if (window.matchMedia) {
       var scheme = window.matchMedia("(prefers-color-scheme: light)");
       if (scheme.addEventListener) {
         scheme.addEventListener("change", function () {
           resolveThemeIcon();
           applyAccent();
-          drawChart();
         });
       }
     }

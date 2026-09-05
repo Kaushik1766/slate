@@ -138,9 +138,7 @@
 
         <dl class="stats">
           <div class="stat"><dt>Temp</dt><dd class="num" id="cpuTemp">--</dd></div>
-          <div class="stat"><dt>Clock</dt><dd class="num" id="cpuClock">--</dd></div>
           <div class="stat"><dt>Power</dt><dd class="num" id="cpuPower">--</dd></div>
-          <div class="stat"><dt>Fan</dt><dd class="num" id="cpuFan">--</dd></div>
         </dl>
       </div>
 
@@ -198,39 +196,6 @@
 
       <div class="mem__foot">
         <span class="meta"><span class="meta__k">Swap</span><span class="meta__v num" id="swapText">--</span></span>
-      </div>
-    </section>
-
-    <!-- ------------------------------------------------------- activity -->
-    <section class="tile tile--activity">
-      <div class="tile__head">
-        <span class="tile__label"><i class="ph ph-broadcast" aria-hidden="true"></i>Last two minutes</span>
-        <span class="legend">
-          <span class="legend__item legend__item--cpu">CPU</span>
-          <span class="legend__item legend__item--gpu">GPU</span>
-        </span>
-      </div>
-
-      <div class="chart"><canvas id="chart"></canvas></div>
-
-      <div class="net">
-        <span class="net__item"><i class="ph ph-arrow-down" aria-hidden="true"></i><span class="num" id="netDown">0</span></span>
-        <span class="net__item"><i class="ph ph-arrow-up" aria-hidden="true"></i><span class="num" id="netUp">0</span></span>
-      </div>
-    </section>
-
-    <!-- --------------------------------------------------------- system -->
-    <section class="tile tile--system">
-      <div class="tile__head">
-        <span class="tile__label"><i class="ph ph-hard-drives" aria-hidden="true"></i>Storage</span>
-      </div>
-
-      <div class="disks" id="disks"></div>
-
-      <div class="power" id="powerRow" hidden>
-        <i class="ph ph-battery-high" id="battIcon" aria-hidden="true"></i>
-        <div class="power__bar bar"><span class="bar__fill" id="battBar"></span></div>
-        <span class="num power__pct" id="battText">--</span>
       </div>
     </section>
 
