@@ -235,7 +235,8 @@ def _print_banner():
     if MEDIA_IMPORT_ERROR:
         print("  Media controls unavailable: {0}".format(MEDIA_IMPORT_ERROR))
     if hub.audio.available:
-        print("  Spectrum tapping {0}".format(hub.audio.device_name))
+        tag = " (pinned via SLATE_AUDIO_DEVICE)" if hub.audio.pin else ""
+        print("  Spectrum tapping {0}{1}".format(hub.audio.device_name, tag))
     elif hub.audio.error:
         print("  Spectrum unavailable: {0}".format(hub.audio.error))
     print("", flush=True)
