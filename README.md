@@ -135,12 +135,25 @@ you are listening to. When nothing is playing it settles back to mint.
 The bars under the player follow the machine's actual audio output, tapped
 from the WASAPI loopback of the default device. It works for anything audible,
 not only apps with a media session, and it follows you if you change output
-device mid-song.
+device mid-song - to an interface, to Bluetooth, and back - usually within a
+couple of seconds, without restarting the server.
+
+Following the default is done through Windows Core Audio (`pycaw`), not
+PortAudio: PortAudio only learns the default device once, when it starts up,
+so asking it later just replays that first answer. A separate check reads the
+live default straight from Core Audio and reopens the tap when it disagrees.
+Band edges are recomputed on every reopen, so a switch between devices running
+at different sample rates (a 96kHz interface, 48kHz Bluetooth) still maps
+frequencies correctly.
+
+Set `SLATE_AUDIO_DEVICE` to a case-insensitive substring of a device name
+(e.g. `SLATE_AUDIO_DEVICE=esi`) to pin capture to that device and stop
+following the default.
 
 Only band magnitudes ever leave the analyser. Audio is measured in a rolling
 in-memory window and discarded; nothing is recorded and nothing is written to
-disk. If no loopback device is available the bars simply never appear, and the
-startup banner says why.
+disk. If no loopback device is available, or a pinned name matches nothing,
+the bars simply never appear, and the startup banner and `/api/state` say why.
 
 Frames are only sent while there is sound and a browser attached, so a silent
 machine costs nothing.
@@ -192,6 +205,7 @@ Environment variables, all optional:
 | `SLATE_PLACE` | `Noida` | Name shown beside the forecast |
 | `SLATE_LOG_LEVEL` | `INFO` | Set to `WARNING` to quieten the log |
 | `SLATE_LOG_ASSETS` | unset | Set to `1` to log CSS, JS and font requests too |
+| `SLATE_AUDIO_DEVICE` | unset | Pin the spectrum to a device by name substring, instead of following the default |
 
 To start Slate when you log in: press `Win+R`, run `shell:startup`, and put a
 shortcut to `run.bat` (or `run-admin.bat`) in the folder that opens.
