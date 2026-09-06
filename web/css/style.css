@@ -398,6 +398,30 @@ body {
   .ambient__art { opacity: 0.16; }
 }
 
+/* Performance mode: lite. Chosen by the auto-probe in app.js or forced from
+   the rail, for hardware that cannot hold five permanently-recomputed blurs
+   at frame rate. Panels go solid rather than transparent (still legible,
+   just not refracting), the drifting glow and grain stop moving entirely,
+   and the ambient wash gets a cheaper blur radius instead of none, so the
+   backdrop still reads as depth rather than a flat rectangle. */
+html[data-perf="lite"] .tile {
+  background: var(--glass-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  opacity: 1;
+  transform: none;
+  animation: none;
+}
+
+html[data-perf="lite"] .ambient__glow { animation: none; }
+
+html[data-perf="lite"] .grain { display: none; }
+
+html[data-perf="lite"] .ambient__art {
+  filter: blur(24px) saturate(140%);
+  -webkit-filter: blur(24px) saturate(140%);
+}
+
 .tile--clock { grid-area: clock; }
 .tile--media { grid-area: media; }
 .tile--cpu   { grid-area: cpu; }

@@ -15,6 +15,7 @@
     host: $("hostName"), os: $("osName"),
     connChip: $("connChip"), connIcon: $("connIcon"), connText: $("connText"),
     wakeBtn: $("wakeBtn"), themeBtn: $("themeBtn"), themeIcon: $("themeIcon"),
+    perfBtn: $("perfBtn"), perfIcon: $("perfIcon"),
     fsBtn: $("fsBtn"), fsIcon: $("fsIcon"),
 
     clockHM: $("clockHM"), clockS: $("clockS"), clockDate: $("clockDate"),
@@ -72,7 +73,9 @@
     trackKey: null,
     clips: [],
     clipIndex: 0,
-    clipShown: false
+    clipShown: false,
+    perfMode: "auto",              // "auto" | "full" | "lite", as stored
+    perfLite: false                // the effective state actually applied
   };
 
   var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
@@ -418,8 +421,44 @@
     ctx: null,
     w: 0,
     h: 0,
-    dpr: 1
+    dpr: 1,
+    lastDraw: 0,                  // ms timestamp of the last actual draw, for the fps cap
+    gradCache: null,              // GRAD_BUCKETS quantised gradients, reused across frames
+    gradH: 0,
+    gradRgb: null,
+    lastPlateScale: null,         // last written breathing values, to skip no-op style writes
+    lastBloomOpacity: null,
+    lastBloomScale: null
   };
+
+  // Data arrives at ~23fps and eyes cannot tell 30 from 60 on a bar chart, so
+  // capping here buys back half the paint work on a slow GPU for free.
+  var SPECTRUM_FRAME_MS = 1000 / 30;
+
+  // A gradient depends only on where a bar's top sits (which is just its
+  // height, since the bottom is fixed) and the accent colour. Quantising bar
+  // height into buckets means at most GRAD_BUCKETS gradient objects exist at
+  // once instead of one new allocation per bar per frame.
+  var GRAD_BUCKETS = 16;
+
+  function getBarGradients(ctx, h, rgb) {
+    if (spectrum.gradCache && spectrum.gradH === h && spectrum.gradRgb === rgb) {
+      return spectrum.gradCache;
+    }
+    var cache = new Array(GRAD_BUCKETS);
+    for (var b = 0; b < GRAD_BUCKETS; b++) {
+      var bh = Math.max(2, (b / (GRAD_BUCKETS - 1)) * h);
+      var top = h - bh;
+      var g = ctx.createLinearGradient(0, top, 0, h);
+      g.addColorStop(0, "rgba(" + rgb + ", 1)");
+      g.addColorStop(1, "rgba(" + rgb + ", 0.42)");
+      cache[b] = g;
+    }
+    spectrum.gradCache = cache;
+    spectrum.gradH = h;
+    spectrum.gradRgb = rgb;
+    return cache;
+  }
 
   function spectrumSize() {
     var canvas = el.spectrum;
@@ -466,16 +505,16 @@
     if (bw <= 0) return;
 
     var rgb = accentRgb();
+    var grads = getBarGradients(ctx, h, rgb);
     for (var i = 0; i < n; i++) {
       var bh = Math.max(2, spectrum.value[i] * h);
       var top = h - bh;
       // The gradient has to run from each bar's own tip, not from the top of
       // the canvas: shared over the full height, short bars only ever pick up
-      // the faint end of it and the whole field washes out.
-      var grad = ctx.createLinearGradient(0, top, 0, h);
-      grad.addColorStop(0, "rgba(" + rgb + ", 1)");
-      grad.addColorStop(1, "rgba(" + rgb + ", 0.42)");
-      ctx.fillStyle = grad;
+      // the faint end of it and the whole field washes out. Bucketing the
+      // height means this picks a pre-built gradient instead of making one.
+      var bucket = Math.max(0, Math.min(GRAD_BUCKETS - 1, Math.round((bh / h) * (GRAD_BUCKETS - 1))));
+      ctx.fillStyle = grads[bucket];
       roundedBar(ctx, i * (bw + gap), top, bw, bh, bw * 0.4);
     }
 
@@ -484,7 +523,41 @@
     ctx.fillRect(0, h - 1, w, 1);
   }
 
-  function spectrumTick() {
+  function updateBreathing() {
+    // The cover breathes with the overall level: the cheapest way to tie the
+    // artwork to the music without touching the image itself. A style write
+    // forces layout bookkeeping even when the value barely moved, so each of
+    // these only lands when the change would actually be visible.
+    var scale = 1 + spectrum.energy * 0.05;
+    if (el.artPlate && (spectrum.lastPlateScale === null
+        || Math.abs(scale - spectrum.lastPlateScale) > 0.0015)) {
+      el.artPlate.style.transform = "scale(" + scale.toFixed(4) + ")";
+      spectrum.lastPlateScale = scale;
+    }
+
+    var bloomOpacity = Math.min(1, spectrum.energy * 2.1);
+    if (spectrum.lastBloomOpacity === null
+        || Math.abs(bloomOpacity - spectrum.lastBloomOpacity) > 0.004) {
+      el.artBloom.style.opacity = bloomOpacity.toFixed(3);
+      spectrum.lastBloomOpacity = bloomOpacity;
+    }
+
+    var bloomScale = 0.82 + spectrum.energy * 0.5;
+    if (spectrum.lastBloomScale === null
+        || Math.abs(bloomScale - spectrum.lastBloomScale) > 0.0015) {
+      el.artBloom.style.transform = "scale(" + bloomScale.toFixed(3) + ")";
+      spectrum.lastBloomScale = bloomScale;
+    }
+  }
+
+  function spectrumTick(ts) {
+    // Always keep the rAF chain alive so the fps cap below can space out the
+    // expensive part (interpolation + canvas paint + style writes) without
+    // losing timing precision or restarting the loop each frame.
+    spectrum.raf = window.requestAnimationFrame(spectrumTick);
+    if (spectrum.lastDraw && ts - spectrum.lastDraw < SPECTRUM_FRAME_MS) return;
+    spectrum.lastDraw = ts;
+
     var v = spectrum.value, t = spectrum.target;
     var settled = true;
     var sum = 0;
@@ -496,25 +569,18 @@
     }
     spectrum.energy = sum / v.length;
     drawSpectrum();
-
-    // The cover breathes with the overall level: the cheapest way to tie the
-    // artwork to the music without touching the image itself.
-    if (el.artPlate) {
-      el.artPlate.style.transform =
-        "scale(" + (1 + spectrum.energy * 0.05).toFixed(4) + ")";
-    }
-    el.artBloom.style.opacity = Math.min(1, spectrum.energy * 2.1).toFixed(3);
-    el.artBloom.style.transform =
-      "scale(" + (0.82 + spectrum.energy * 0.5).toFixed(3) + ")";
+    updateBreathing();
 
     if (Date.now() - spectrum.lastFrame > 900 && settled) {
+      window.cancelAnimationFrame(spectrum.raf);
       spectrum.raf = 0;
       el.spectrumWrap.hidden = true;
-      if (el.artPlate) el.artPlate.style.transform = "";
+      if (el.artPlate) { el.artPlate.style.transform = ""; spectrum.lastPlateScale = null; }
       el.artBloom.style.opacity = "0";
+      spectrum.lastBloomOpacity = null;
+      spectrum.lastBloomScale = null;
       return;
     }
-    spectrum.raf = window.requestAnimationFrame(spectrumTick);
   }
 
   function onSpectrumFrame(bands) {
@@ -875,6 +941,77 @@
     applyAccent();
   });
 
+  /* --------------------------------------------------------- performance mode */
+
+  // Old tablet GPUs choke on the always-animating backdrop blur; lite mode
+  // trades that depth effect for solid panels the compositor can hold at
+  // frame rate. Auto measures once, remembers the verdict, and a rail button
+  // lets the user override it either way, also remembered.
+  var PERF_PROBE_MS = 2000;
+  var PERF_FPS_FLOOR = 40;
+
+  function setPerfLite(lite) {
+    state.perfLite = lite;
+    el.root.setAttribute("data-perf", lite ? "lite" : "full");
+    if (el.perfIcon) el.perfIcon.className = "ph " + (lite ? "ph-leaf" : "ph-gauge");
+    if (el.perfBtn) el.perfBtn.setAttribute("aria-pressed", lite ? "true" : "false");
+    // Any cached spectrum gradients were built against the old surface; the
+    // next draw call rebuilds them, but nudging gradH forces that even if
+    // the canvas size itself did not change.
+    spectrum.gradH = -1;
+  }
+
+  function probePerfOnce() {
+    var frames = 0;
+    var start = null;
+    function tick(ts) {
+      if (start === null) start = ts;
+      frames += 1;
+      if (ts - start < PERF_PROBE_MS) {
+        window.requestAnimationFrame(tick);
+        return;
+      }
+      var fps = frames / ((ts - start) / 1000);
+      var lite = fps < PERF_FPS_FLOOR;
+      try { window.localStorage.setItem("slate.perf.auto", lite ? "lite" : "full"); } catch (e) {}
+      if (lite) setPerfLite(true);
+    }
+    window.requestAnimationFrame(tick);
+  }
+
+  function initPerfMode() {
+    var saved = null;
+    try { saved = window.localStorage.getItem("slate.perf"); } catch (e) {}
+    state.perfMode = saved === "lite" || saved === "full" ? saved : "auto";
+
+    if (state.perfMode !== "auto") {
+      setPerfLite(state.perfMode === "lite");
+      return;
+    }
+
+    var remembered = null;
+    try { remembered = window.localStorage.getItem("slate.perf.auto"); } catch (e) {}
+    if (remembered === "lite" || remembered === "full") {
+      setPerfLite(remembered === "lite");
+      return;
+    }
+
+    // First run: start full, measure for a couple of seconds with everything
+    // actually on screen, then decide and remember it so this probe does not
+    // run again on every load.
+    setPerfLite(false);
+    if (!state.reduceMotion) probePerfOnce();
+  }
+
+  if (el.perfBtn) {
+    el.perfBtn.addEventListener("click", function () {
+      var next = !state.perfLite;
+      setPerfLite(next);
+      state.perfMode = next ? "lite" : "full";
+      try { window.localStorage.setItem("slate.perf", state.perfMode); } catch (e) {}
+    });
+  }
+
   var wakeLock = null;
 
   function releaseWake() {
@@ -1045,6 +1182,7 @@
     if (saved === "light" || saved === "dark") el.root.setAttribute("data-theme", saved);
     resolveThemeIcon();
     applyAccent();
+    initPerfMode();
 
     buildLadder();
     measureRing();
