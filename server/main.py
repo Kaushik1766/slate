@@ -296,7 +296,7 @@ async def clients():
 
 
 @app.get("/api/art")
-async def art(rev: int = 0):
+async def art(rev: int = 0, k: str = ""):
     if hub.media is None or not hub.media.art:
         raise HTTPException(status_code=404, detail="no artwork")
     return Response(

@@ -5,7 +5,10 @@ Reads whatever is currently playing through GlobalSystemMediaTransportControls
 Spotify, browsers, VLC, Groove, and anything else that registers a session.
 
 Album art is fetched only when the track identity changes and is cached in
-memory; the browser refetches it by revision number.
+memory. The browser addresses it by a hash of the track, not by a counter: a
+counter restarts from zero every time the server does, so "revision 4" would
+mean a different picture after a restart while the browser still had the old
+one cached under that name.
 """
 
 import hashlib
@@ -171,6 +174,9 @@ class MediaHub:
             "updated_at": updated,
             "has_art": self.art is not None,
             "art_rev": self.art_rev,
+            # Content-addressed, so the URL changes exactly when the picture
+            # does and never collides across restarts.
+            "art_key": self._art_key,
             "can": {
                 "play": bool(controls.is_play_enabled or controls.is_pause_enabled),
                 "next": bool(controls.is_next_enabled),

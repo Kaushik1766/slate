@@ -59,7 +59,7 @@
     socket: null,
     retry: 0,
     coreCount: 0,
-    artRev: -1,
+    artRev: null,
     accent: { h: 168, s: 0.52 },     // mint, until artwork says otherwise
     media: null,
     mediaBase: 0,
@@ -754,8 +754,8 @@
   function loadArt(m) {
     showClip(!m.has_art);
     if (!m.has_art) {
-      if (state.artRev !== -1) {
-        state.artRev = -1;
+      if (state.artRev !== null) {
+        state.artRev = null;
         el.artImg.hidden = true;
         el.artImg.setAttribute("data-shown", "false");
         el.ambientArt.setAttribute("data-loaded", "false");
@@ -765,10 +765,14 @@
       }
       return;
     }
-    if (m.art_rev === state.artRev) return;
-    state.artRev = m.art_rev;
+    // Keyed on the track hash rather than a counter: the counter restarts
+    // with the server, so a cached image could outlive the song it belonged
+    // to and the browser would never even ask for the new one.
+    var token = m.art_key || ("rev" + m.art_rev);
+    if (token === state.artRev) return;
+    state.artRev = token;
 
-    var url = "/api/art?rev=" + m.art_rev;
+    var url = "/api/art?k=" + encodeURIComponent(token);
     var probe = new Image();
     probe.onload = function () {
       el.artImg.src = url;
