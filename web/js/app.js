@@ -919,15 +919,50 @@
     }
   });
 
+  /* Android rotates to the device's natural orientation when a page goes
+     fullscreen without asking for one, and on most tablets that is portrait.
+     Pin whichever way it was being held instead. */
+  var wantedOrientation = null;
+
+  function currentOrientation() {
+    var o = window.screen && screen.orientation && screen.orientation.type;
+    if (o) return o.indexOf("portrait") === 0 ? "portrait" : "landscape";
+    return window.innerWidth >= window.innerHeight ? "landscape" : "portrait";
+  }
+
+  function lockOrientation(kind) {
+    if (!window.screen || !screen.orientation || !screen.orientation.lock) return;
+    try {
+      var p = screen.orientation.lock(kind);
+      if (p && p["catch"]) p["catch"](function () {});
+    } catch (err) {
+      /* iOS and desktop simply do not offer this; nothing to fall back to. */
+    }
+  }
+
+  function unlockOrientation() {
+    if (window.screen && screen.orientation && screen.orientation.unlock) {
+      try { screen.orientation.unlock(); } catch (err) {}
+    }
+  }
+
   el.fsBtn.addEventListener("click", function () {
     var doc = document;
     var root = doc.documentElement;
     var isFull = doc.fullscreenElement || doc.webkitFullscreenElement;
     if (isFull) {
+      wantedOrientation = null;
+      unlockOrientation();
       if (doc.exitFullscreen) doc.exitFullscreen();
       else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
-    } else if (root.requestFullscreen) {
-      root.requestFullscreen()["catch"](function () {});
+      return;
+    }
+    // Read it before requesting: by the time fullscreen resolves the screen
+    // has already turned, so asking afterwards gives the wrong answer.
+    wantedOrientation = currentOrientation();
+    if (root.requestFullscreen) {
+      var attempt = root.requestFullscreen();
+      if (attempt && attempt["catch"]) attempt["catch"](function () {});
     } else if (root.webkitRequestFullscreen) {
       root.webkitRequestFullscreen();
     }
@@ -936,6 +971,14 @@
   function syncFsIcon() {
     var isFull = document.fullscreenElement || document.webkitFullscreenElement;
     el.fsIcon.className = "ph " + (isFull ? "ph-arrows-in" : "ph-arrows-out");
+    if (isFull) {
+      if (wantedOrientation) lockOrientation(wantedOrientation);
+    } else {
+      wantedOrientation = null;
+      unlockOrientation();
+    }
+    spectrum.w = 0;                      // the canvas just changed size
+    fitTitle();
   }
   document.addEventListener("fullscreenchange", syncFsIcon);
   document.addEventListener("webkitfullscreenchange", syncFsIcon);
